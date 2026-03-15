@@ -1,83 +1,17 @@
 {
   "common": {
     "name": "carcharging",
-    "version": "0.1.0-alpha.3",
-    "title": "CarCharging",
     "titleLang": {
-      "en": "CarCharging",
-      "de": "CarCharging"
+      "en": "CarCharging"
     },
-    "desc": {
-      "en": "Adapter for EV charging stations and vehicles",
-      "de": "Adapter f\u00fcr Fahrzeuge und Lades\u00e4ulen"
-    },
-    "authors": [
-      "radebold <radebold@gmail.com>"
-    ],
-    "license": "MIT",
-    "platform": "Javascript/Node.js",
-    "mode": "daemon",
-    "icon": "carcharging.png",
-    "type": "hardware",
-    "keywords": [
-      "chargepoint",
-      "ladestation",
-      "ev",
-      "evse",
-      "charging"
-    ],
-    "readme": "https://github.com/radebold/iobroker.carcharging/blob/main/README.md",
-    "loglevel": "info",
-    "compact": true,
-    "connectionType": "cloud",
-    "dataSource": "poll",
-    "materialize": true,
-    "materializeTab": true,
-    "adminUI": {
-      "config": "json"
-    },
-    "messagebox": true
+    "version": "0.1.0-alpha.4",
+    "news": {
+      "0.1.0-alpha.4": {
+        "en": "Initial multi-vehicle alpha version"
+      }
+    }
   },
   "native": {
-    "interval": 5,
-    "stations": [],
-    "channels": [],
-    "subscriptions": [],
-    "visHtmlEnabled": true,
-    "visHtmlObjectId": "0_userdata.0.Vis.ChargePoint.htmlStations",
-    "visHtmlDebounceMs": 800,
-    "carLatStateId": "",
-    "carLonStateId": "",
-    "carSocStateId": "",
-    "carLat": "",
-    "carLon": "",
-    "notifySocBelow": 30,
-    "notifyMaxDistanceM": 500,
-    "visHtmlMobileObjectId": "0_userdata.0.Vis.ChargePoint.htmlStationsMobile",
-    "visHtmlMobileEnabled": true,
-    "notifyCooldownMin": 15,
-    "nearestType2Enabled": false,
-    "nearestRadiusM": 2000,
-    "nearestPageSize": 10,
-    "version": "0.1.0-alpha.3",
-    "vehicles": [
-      {
-        "id": "primary",
-        "name": "Primary vehicle",
-        "enabled": true,
-        "socStateId": "",
-        "latStateId": "",
-        "lonStateId": "",
-        "connectedStateId": "",
-        "chargingStateId": "",
-        "lat": "",
-        "lon": ""
-      }
-    ]
-  },
-  "protectedNative": [],
-  "encryptedNative": [],
-  "objects": [],
-  "instanceObjects": [],
-  "version": "0.1.0-alpha.3"
+    "vehicles": []
+  }
 }

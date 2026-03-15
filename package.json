@@ -1,22 +1,15 @@
 {
   "name": "iobroker.carcharging",
-  "version": "0.1.0-alpha.3",
-  "description": "ioBroker adapter for EV charging stations and vehicles",
+  "version": "0.1.0-alpha.4",
+  "description": "CarCharging adapter for multiple EVs",
   "main": "build/main.js",
-  "author": "radebold <radebold@gmail.com>",
-  "license": "MIT",
-  "dependencies": {
-    "@iobroker/adapter-core": "^3.2.3",
-    "axios": "^1.7.2"
-  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "watch": "tsc -w -p tsconfig.json",
-    "version:sync": "node scripts/sync-version.js",
-    "release:alpha": "npm version prerelease --preid=alpha --no-git-tag-version && npm run version:sync",
-    "release:patch": "npm version patch --no-git-tag-version && npm run version:sync"
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@iobroker/adapter-core": "^3.2.3"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^5.0.0"
   }
 }
