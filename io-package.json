@@ -2,16 +2,37 @@
   "common": {
     "name": "carcharging",
     "titleLang": {
-      "en": "CarCharging"
+      "en": "CarCharging",
+      "de": "CarCharging"
     },
-    "version": "0.1.0-alpha.4",
+    "version": "0.1.0-alpha.7",
     "news": {
-      "0.1.0-alpha.4": {
-        "en": "Initial multi-vehicle alpha version"
+      "0.1.0-alpha.7": {
+        "en": "Alpha 7: added widget JSON data for multiple vehicles."
       }
+    },
+    "desc": {
+      "en": "CarCharging adapter prepared for multiple EVs"
+    },
+    "authors": [
+      "OpenAI / user project scaffold"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "type": "energy",
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "poll",
+    "adminUI": {
+      "config": "json"
     }
   },
   "native": {
-    "vehicles": []
-  }
+    "tomtomApiKey": "",
+    "vehicles": [],
+    "stations": []
+  },
+  "objects": [],
+  "instanceObjects": []
 }

@@ -1,24 +1,118 @@
 {
-  "type": "panel",
+  "i18n": true,
+  "type": "tabs",
   "items": {
-    "vehicles": {
-      "type": "table",
+    "general": {
+      "type": "panel",
+      "label": "General",
+      "items": {
+        "tomtomApiKey": {
+          "type": "text",
+          "label": "TomTom API Key"
+        }
+      }
+    },
+    "vehiclesTab": {
+      "type": "panel",
       "label": "Vehicles",
       "items": {
-        "id": {
-          "type": "text"
-        },
-        "name": {
-          "type": "text"
-        },
-        "socState": {
-          "type": "text"
-        },
-        "latState": {
-          "type": "text"
-        },
-        "lonState": {
-          "type": "text"
+        "vehicles": {
+          "newLine": true,
+          "type": "table",
+          "label": "Vehicle list",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xs": 12,
+          "items": [
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "label": "Enabled"
+            },
+            {
+              "type": "text",
+              "attr": "id",
+              "label": "Vehicle ID"
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "label": "Name"
+            },
+            {
+              "type": "text",
+              "attr": "socState",
+              "label": "SoC state"
+            },
+            {
+              "type": "text",
+              "attr": "latState",
+              "label": "Lat state"
+            },
+            {
+              "type": "text",
+              "attr": "lonState",
+              "label": "Lon state"
+            },
+            {
+              "type": "text",
+              "attr": "connectedState",
+              "label": "Connected state"
+            },
+            {
+              "type": "text",
+              "attr": "chargingState",
+              "label": "Charging state"
+            }
+          ]
+        }
+      }
+    },
+    "stationsTab": {
+      "type": "panel",
+      "label": "Stations",
+      "items": {
+        "stations": {
+          "newLine": true,
+          "type": "table",
+          "label": "Charging stations",
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xs": 12,
+          "items": [
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "label": "Enabled"
+            },
+            {
+              "type": "text",
+              "attr": "id",
+              "label": "Station ID"
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "label": "Name"
+            },
+            {
+              "type": "number",
+              "attr": "lat",
+              "label": "Latitude"
+            },
+            {
+              "type": "number",
+              "attr": "lon",
+              "label": "Longitude"
+            },
+            {
+              "type": "number",
+              "attr": "freePorts",
+              "label": "Free ports"
+            }
+          ]
         }
       }
     }

@@ -1,15 +1,16 @@
 {
   "name": "iobroker.carcharging",
-  "version": "0.1.0-alpha.4",
-  "description": "CarCharging adapter for multiple EVs",
-  "main": "build/main.js",
+  "version": "0.1.0-alpha.7",
+  "description": "CarCharging adapter (alpha)",
+  "main": "main.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^3.2.3"
+    "@iobroker/adapter-core": "^3.2.3",
+    "axios": "^1.7.7"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.6.3"
   }
 }
