@@ -8,7 +8,7 @@
     "version": "0.1.0-alpha.7",
     "news": {
       "0.1.0-alpha.7": {
-        "en": "Alpha 7: added widget JSON data for multiple vehicles."
+        "en": "Alpha 7 fixed: included runnable build output."
       }
     },
     "desc": {
