@@ -1,38 +1,69 @@
 {
   "common": {
     "name": "carcharging",
+    "version": "0.1.0-alpha.8",
+    "title": "CPT ChargePoint",
     "titleLang": {
       "en": "CarCharging",
       "de": "CarCharging"
     },
-    "version": "0.1.0-alpha.7",
-    "news": {
-      "0.1.0-alpha.7": {
-        "en": "Alpha 7 fixed: included runnable build output."
-      }
-    },
     "desc": {
-      "en": "CarCharging adapter prepared for multiple EVs"
+      "en": "Adapter for ChargePoint charging stations status",
+      "de": "Adapter f\u00fcr den Status von ChargePoint-Ladestationen"
     },
     "authors": [
-      "OpenAI / user project scaffold"
+      "radebold <radebold@gmail.com>"
     ],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "mode": "daemon",
-    "type": "energy",
+    "icon": "cpt.png",
+    "type": "hardware",
+    "keywords": [
+      "chargepoint",
+      "ladestation",
+      "ev",
+      "evse",
+      "charging"
+    ],
+    "readme": "https://github.com/radebold/iobroker.cpt/blob/main/README.md",
+    "loglevel": "info",
     "compact": true,
-    "connectionType": "local",
+    "connectionType": "cloud",
     "dataSource": "poll",
+    "materialize": true,
+    "materializeTab": true,
     "adminUI": {
       "config": "json"
-    }
+    },
+    "messagebox": true
   },
   "native": {
-    "tomtomApiKey": "",
-    "vehicles": [],
-    "stations": []
+    "interval": 5,
+    "stations": [],
+    "channels": [],
+    "subscriptions": [],
+    "visHtmlEnabled": true,
+    "visHtmlObjectId": "0_userdata.0.Vis.ChargePoint.htmlStations",
+    "visHtmlDebounceMs": 800,
+    "carLatStateId": "",
+    "carLonStateId": "",
+    "carSocStateId": "",
+    "carLat": "",
+    "carLon": "",
+    "notifySocBelow": 30,
+    "notifyMaxDistanceM": 500,
+    "visHtmlMobileObjectId": "0_userdata.0.Vis.ChargePoint.htmlStationsMobile",
+    "visHtmlMobileEnabled": true,
+    "notifyCooldownMin": 15,
+    "nearestType2Enabled": false,
+    "nearestRadiusM": 2000,
+    "nearestPageSize": 10,
+    "version": "0.7.10"
   },
+  "protectedNative": [],
+  "encryptedNative": [],
   "objects": [],
-  "instanceObjects": []
+  "instanceObjects": [],
+  "version": "0.7.10"
 }
