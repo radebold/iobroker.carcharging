@@ -1,2 +1,2 @@
-# iobroker.cpt
+# iobroker.carcharging
 Test Test Chargepoint Chargingg station

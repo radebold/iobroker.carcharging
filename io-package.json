@@ -1,15 +1,15 @@
 {
   "common": {
     "name": "carcharging",
-    "version": "0.1.0-alpha.9",
-    "title": "CPT ChargePoint",
+    "version": "0.1.0-alpha.11",
+    "title": "CarCharging",
     "titleLang": {
       "en": "CarCharging",
       "de": "CarCharging"
     },
     "desc": {
-      "en": "Adapter for ChargePoint charging stations status",
-      "de": "Adapter für den Status von ChargePoint-Ladestationen"
+      "en": "Adapter for EV charging stations with multi-vehicle support",
+      "de": "Adapter für EV-Ladestationen mit Mehrfahrzeug-Unterstützung"
     },
     "authors": [
       "radebold <radebold@gmail.com>"
@@ -17,7 +17,7 @@
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "mode": "daemon",
-    "icon": "cpt.png",
+    "icon": "carcharging.png",
     "type": "hardware",
     "keywords": [
       "chargepoint",
@@ -26,7 +26,7 @@
       "evse",
       "charging"
     ],
-    "readme": "https://github.com/radebold/iobroker.cpt/blob/main/README.md",
+    "readme": "https://github.com/radebold/iobroker.carcharging/blob/main/README.md",
     "loglevel": "info",
     "compact": true,
     "connectionType": "cloud",
@@ -38,8 +38,11 @@
     },
     "messagebox": true,
     "news": {
-      "0.1.0-alpha.9": {
-        "en": "Added multi-vehicle configuration on CPT basis."
+      "0.1.0-alpha.10": {
+        "en": "CPT-based alpha with multi-vehicle config and widget JSON."
+      },
+      "0.1.0-alpha.11": {
+        "en": "Cleaned package, removed backup files, improved branding and kept CPT-based multi-vehicle logic."
       }
     }
   },
@@ -64,12 +67,12 @@
     "nearestType2Enabled": false,
     "nearestRadiusM": 2000,
     "nearestPageSize": 10,
-    "version": "0.7.10",
+    "version": "0.1.0-alpha.11",
     "vehicles": []
   },
   "protectedNative": [],
   "encryptedNative": [],
   "objects": [],
   "instanceObjects": [],
-  "version": "0.7.10"
+  "version": "0.1.0-alpha.11"
 }
