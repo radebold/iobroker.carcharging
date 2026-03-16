@@ -4,7 +4,7 @@ const utils = require('@iobroker/adapter-core');
 const axios = require('axios');
 const IO_PKG = require('./io-package.json');
 const VERSION = (IO_PKG && IO_PKG.common && IO_PKG.common.version) ? IO_PKG.common.version : '0.0.0';
-const TOMTOM_LOGO_PATH = '/adapter/carcharging/tomtom.png';
+const TOMTOM_LOGO_PATH = '/adapter/cpt/tomtom.png';
 
 
 function parseNumberLocale(v) {
@@ -121,6 +121,11 @@ class CptAdapter extends utils.Adapter {
 
         // remember which incomplete stations were already warned (avoid log spam)
         this.invalidStationWarned = new Set();
+        this.vehiclesConfig = [];
+        this.primaryVehicleId = '';
+        this.vehicleForeignMap = {};
+        this.vehicleLiveById = {};
+
         this.stationInfoByPrefix = {}; // { [prefix]: { city, name } }
 
         this.on('ready', this.onReady.bind(this));
@@ -264,7 +269,7 @@ class CptAdapter extends utils.Adapter {
                 params,
                 validateStatus: () => true,
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (iobroker.carcharging)',
+                    'User-Agent': 'Mozilla/5.0 (iobroker.cpt)',
                     Accept: 'application/json,text/plain,*/*',
                 },
             });
@@ -600,6 +605,159 @@ class CptAdapter extends utils.Adapter {
         await this.setStateAsync('tools.distanceSource', { val: this.getTomTomEnabled() ? 'tomtom' : 'airline', ack: true });
     }
 
+
+    getConfiguredVehicles() {
+        let vehicles = this.config && this.config.vehicles ? this.config.vehicles : [];
+        if (vehicles && !Array.isArray(vehicles) && typeof vehicles === 'object') vehicles = Object.values(vehicles);
+        if (typeof vehicles === 'string') {
+            try { vehicles = JSON.parse(vehicles); } catch { vehicles = []; }
+        }
+        if (!Array.isArray(vehicles)) vehicles = [];
+        return vehicles
+            .map((v, idx) => ({
+                enabled: v.enabled === undefined || v.enabled === null ? true : isTrue(v.enabled),
+                id: String(v.id || `vehicle_${idx + 1}`).trim(),
+                name: String(v.name || v.id || `Vehicle ${idx + 1}`).trim(),
+                carLatStateId: String(v.carLatStateId || '').trim(),
+                carLonStateId: String(v.carLonStateId || '').trim(),
+                carSocStateId: String(v.carSocStateId || '').trim(),
+                carConnectedStateId: String(v.carConnectedStateId || '').trim(),
+                carChargingStateId: String(v.carChargingStateId || '').trim(),
+            }))
+            .filter(v => !!v.id && v.enabled !== false);
+    }
+
+    async ensureVehiclesObjects() {
+        await this.setObjectNotExistsAsync('vehicles', { type: 'channel', common: { name: 'Vehicles' }, native: {} });
+        for (const v of this.vehiclesConfig) {
+            const base = `vehicles.${v.id}`;
+            await this.setObjectNotExistsAsync(base, { type: 'channel', common: { name: v.name || v.id }, native: {} });
+            const defs = [
+                ['name', { name: 'Name', type: 'string', role: 'text', read: true, write: false }],
+                ['enabled', { name: 'Enabled', type: 'boolean', role: 'indicator', read: true, write: false }],
+                ['soc', { name: 'SoC', type: 'number', role: 'value.battery', unit: '%', read: true, write: false }],
+                ['lat', { name: 'Latitude', type: 'number', role: 'value.gps.latitude', read: true, write: false }],
+                ['lon', { name: 'Longitude', type: 'number', role: 'value.gps.longitude', read: true, write: false }],
+                ['connected', { name: 'Connected', type: 'boolean', role: 'indicator.connected', read: true, write: false }],
+                ['charging', { name: 'Charging', type: 'boolean', role: 'indicator', read: true, write: false }],
+                ['source', { name: 'Source', type: 'string', role: 'text', read: true, write: false }],
+                ['lastUpdate', { name: 'Last update', type: 'string', role: 'date', read: true, write: false }],
+            ];
+            for (const [id, common] of defs) {
+                await this.setObjectNotExistsAsync(`${base}.${id}`, { type: 'state', common, native: {} });
+            }
+            await this.setStateAsync(`${base}.name`, { val: v.name || v.id, ack: true });
+            await this.setStateAsync(`${base}.enabled`, { val: v.enabled !== false, ack: true });
+        }
+    }
+
+    async refreshConfiguredVehicles() {
+        for (const v of this.vehiclesConfig) {
+            const base = `vehicles.${v.id}`;
+            const readForeign = async (id) => {
+                if (!id) return null;
+                try { const st = await this.getForeignStateAsync(id); return st ? st.val : null; } catch { return null; }
+            };
+            const latRaw = await readForeign(v.carLatStateId);
+            const lonRaw = await readForeign(v.carLonStateId);
+            const socRaw = await readForeign(v.carSocStateId);
+            const conRaw = await readForeign(v.carConnectedStateId);
+            const chgRaw = await readForeign(v.carChargingStateId);
+            const lat = latRaw !== null ? parseNumberLocale(latRaw) : null;
+            const lon = lonRaw !== null ? parseNumberLocale(lonRaw) : null;
+            const soc = socRaw !== null ? parseNumberLocale(socRaw) : null;
+            const connected = conRaw !== null ? parseConnectedState(conRaw) : null;
+            const charging = chgRaw !== null ? parseChargingState(chgRaw) : null;
+            this.vehicleLiveById[v.id] = { lat, lon, soc, connected, charging };
+
+            if (Number.isFinite(lat)) await this.setStateAsync(`${base}.lat`, { val: lat, ack: true });
+            if (Number.isFinite(lon)) await this.setStateAsync(`${base}.lon`, { val: lon, ack: true });
+            if (Number.isFinite(soc)) await this.setStateAsync(`${base}.soc`, { val: soc, ack: true });
+            if (connected !== null) await this.setStateAsync(`${base}.connected`, { val: connected, ack: true });
+            if (charging !== null) await this.setStateAsync(`${base}.charging`, { val: charging, ack: true });
+            await this.setStateAsync(`${base}.source`, { val: 'foreign_states', ack: true });
+            await this.setStateAsync(`${base}.lastUpdate`, { val: new Date().toISOString(), ack: true });
+        }
+    }
+
+    subscribeVehicleForeignStates() {
+        this.vehicleForeignMap = {};
+        for (const v of this.vehiclesConfig) {
+            const pairs = [
+                [v.carLatStateId, 'lat'],
+                [v.carLonStateId, 'lon'],
+                [v.carSocStateId, 'soc'],
+                [v.carConnectedStateId, 'connected'],
+                [v.carChargingStateId, 'charging'],
+            ];
+            for (const [sid, field] of pairs) {
+                if (!sid) continue;
+                this.subscribeForeignStates(sid);
+                this.vehicleForeignMap[sid] = { vehicleId: v.id, field };
+            }
+        }
+    }
+
+    async handleVehicleForeignStateChange(id, state) {
+        const map = this.vehicleForeignMap[id];
+        if (!map || !state) return false;
+        const v = this.vehiclesConfig.find(x => x.id === map.vehicleId);
+        if (!v) return false;
+        const base = `vehicles.${v.id}`;
+        this.vehicleLiveById[v.id] = this.vehicleLiveById[v.id] || {};
+
+        if (map.field === 'lat') {
+            const val = parseNumberLocale(state.val);
+            if (Number.isFinite(val)) {
+                this.vehicleLiveById[v.id].lat = val;
+                await this.setStateAsync(`${base}.lat`, { val, ack: true });
+            }
+        } else if (map.field === 'lon') {
+            const val = parseNumberLocale(state.val);
+            if (Number.isFinite(val)) {
+                this.vehicleLiveById[v.id].lon = val;
+                await this.setStateAsync(`${base}.lon`, { val, ack: true });
+            }
+        } else if (map.field === 'soc') {
+            const val = parseNumberLocale(state.val);
+            if (Number.isFinite(val)) {
+                this.vehicleLiveById[v.id].soc = val;
+                await this.setStateAsync(`${base}.soc`, { val, ack: true });
+            }
+        } else if (map.field === 'connected') {
+            const val = parseConnectedState(state.val);
+            if (val !== null) {
+                this.vehicleLiveById[v.id].connected = val;
+                await this.setStateAsync(`${base}.connected`, { val, ack: true });
+            }
+        } else if (map.field === 'charging') {
+            const val = parseChargingState(state.val);
+            if (val !== null) {
+                this.vehicleLiveById[v.id].charging = val;
+                await this.setStateAsync(`${base}.charging`, { val, ack: true });
+            }
+        }
+
+        await this.setStateAsync(`${base}.lastUpdate`, { val: new Date().toISOString(), ack: true });
+
+        if (v.id === this.primaryVehicleId) {
+            if (map.field === 'lat' || map.field === 'lon') {
+                const lat = this.vehicleLiveById[v.id].lat;
+                const lon = this.vehicleLiveById[v.id].lon;
+                if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                    await this.updateCarPosition(lat, lon, `${v.carLatStateId || ''} | ${v.carLonStateId || ''}`.trim());
+                }
+            } else if (map.field === 'soc') {
+                await this.updateCarSoc(this.vehicleLiveById[v.id].soc, v.carSocStateId);
+            } else if (map.field === 'connected') {
+                await this.updateCarConnected(this.vehicleLiveById[v.id].connected, v.carConnectedStateId);
+            } else if (map.field === 'charging') {
+                await this.updateCarCharging(this.vehicleLiveById[v.id].charging, v.carChargingStateId);
+            }
+        }
+        return true;
+    }
+
     async ensureCarObjects() {
         await this.setObjectNotExistsAsync('car', { type: 'channel', common: { name: 'Auto' }, native: {} });
         await this.setObjectNotExistsAsync('car.lat', {
@@ -878,7 +1036,7 @@ class CptAdapter extends utils.Adapter {
         this.log.debug(`nearestType2 bbox: NE(${bbox.ne_lat}, ${bbox.ne_lon}) SW(${bbox.sw_lat}, ${bbox.sw_lon}) r=${radiusM}m`);
 
         try {
-            const resp = await axios.get(url, { timeout: 20000, validateStatus: () => true, headers: { 'User-Agent': 'Mozilla/5.0 (iobroker.carcharging)', 'Accept': 'application/json,text/plain,*/*' } });
+            const resp = await axios.get(url, { timeout: 20000, validateStatus: () => true, headers: { 'User-Agent': 'Mozilla/5.0 (iobroker.cpt)', 'Accept': 'application/json,text/plain,*/*' } });
             if (resp.status < 200 || resp.status >= 300) {
                 this.log.warn(`nearestType2: HTTP ${resp.status}`);
                 await this.setStateAsync('nearestType2.lastError', { val: `HTTP ${resp.status}`, ack: true });
@@ -1532,7 +1690,7 @@ async cleanupObsoleteStations(currentPrefixes) {
         const prefixesExisting = new Set();
 
         for (const id of Object.keys(nameStates || {})) {
-            // id looks like "carcharging.0.stations.<city>.<station>.name"
+            // id looks like "cpt.0.stations.<city>.<station>.name"
             const rel = id.replace(this.namespace + '.', '').replace(/\.name$/, '');
             prefixesExisting.add(rel);
         }
@@ -2066,7 +2224,7 @@ async cleanupObsoleteStations(currentPrefixes) {
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;">
     <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-weight:800;font-size:16px;">⚡ CPT</span><span style="font-weight:700;font-size:11px;opacity:.8;">${esc(VERSION)}</span></div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-      <button onclick="(function(btn){ if (btn.dataset.busy === '1') return; btn.dataset.busy = '1'; btn.disabled = true; btn.style.background = '#777'; btn.style.cursor = 'default'; btn.innerHTML = '⏳ Refresh...'; vis.conn.setState('carcharging.0.tools.refreshNow', true); var started = Date.now(); var reset = function(){ btn.dataset.busy = '0'; btn.disabled = false; btn.style.background = '#2b8cff'; btn.style.cursor = 'pointer'; btn.innerHTML = '🔄 Refresh'; }; var timer = setInterval(function(){ try { var v = (vis.states && typeof vis.states.attr === 'function') ? vis.states.attr('carcharging.0.tools.refreshNow.val') : null; if (v === false || v === 'false' || v === 0 || v === '0') { clearInterval(timer); reset(); return; } } catch (e) {} if (Date.now() - started > 15000) { clearInterval(timer); reset(); } }, 500); })(this);" style="background:#2b8cff;border:none;color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Refresh</button>
+      <button onclick="(function(btn){ if (btn.dataset.busy === '1') return; btn.dataset.busy = '1'; btn.disabled = true; btn.style.background = '#777'; btn.style.cursor = 'default'; btn.innerHTML = '⏳ Refresh...'; vis.conn.setState('cpt.0.tools.refreshNow', true); var started = Date.now(); var reset = function(){ btn.dataset.busy = '0'; btn.disabled = false; btn.style.background = '#2b8cff'; btn.style.cursor = 'pointer'; btn.innerHTML = '🔄 Refresh'; }; var timer = setInterval(function(){ try { var v = (vis.states && typeof vis.states.attr === 'function') ? vis.states.attr('cpt.0.tools.refreshNow.val') : null; if (v === false || v === 'false' || v === 0 || v === '0') { clearInterval(timer); reset(); return; } } catch (e) {} if (Date.now() - started > 15000) { clearInterval(timer); reset(); } }, 500); })(this);" style="background:#2b8cff;border:none;color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Refresh</button>
       <div style="opacity:.75;font-size:12px;">${esc(updated)}</div>
     </div>
   </div>
@@ -2242,8 +2400,22 @@ async onReady() {
         this.log.debug(`Config (car): latId='${this.carLatStateId}' lonId='${this.carLonStateId}' socId='${this.carSocStateId}' connectedId='${this.carConnectedStateId}' chargingId='${this.carChargingStateId}' latStatic=${this.carLatStatic} lonStatic=${this.carLonStatic} socBelow=${this.notifySocBelow} maxDistM=${this.notifyMaxDistanceM} cooldownMin=${this.notifyCooldownMin}`);
         this.log.debug(`Config (tomtom): enabled=${this.getTomTomEnabled()} traffic=${this.tomtomTraffic} cacheMin=${this.tomtomCacheMin}`);
 
+        this.vehiclesConfig = this.getConfiguredVehicles();
+        const primaryVehicle = this.vehiclesConfig.length ? this.vehiclesConfig[0] : null;
+        this.primaryVehicleId = primaryVehicle ? primaryVehicle.id : '';
+        if (primaryVehicle) {
+            this.carLatStateId = primaryVehicle.carLatStateId || '';
+            this.carLonStateId = primaryVehicle.carLonStateId || '';
+            this.carSocStateId = primaryVehicle.carSocStateId || '';
+            this.carConnectedStateId = primaryVehicle.carConnectedStateId || '';
+            this.carChargingStateId = primaryVehicle.carChargingStateId || '';
+            this.log.info(`Mehrfahrzeug-Modus aktiv: ${this.vehiclesConfig.length} Fahrzeug(e), primär=${primaryVehicle.name || primaryVehicle.id}`);
+        }
+
         await this.ensureToolsObjects();
         await this.ensureCarObjects();
+        await this.ensureVehiclesObjects();
+        await this.refreshConfiguredVehicles();
         await this.ensureNearestType2Objects();
 
         // subscribe to foreign car position states (optional)
@@ -2252,6 +2424,7 @@ async onReady() {
         if (this.carSocStateId) this.subscribeForeignStates(this.carSocStateId);
         if (this.carConnectedStateId) this.subscribeForeignStates(this.carConnectedStateId);
         if (this.carChargingStateId) this.subscribeForeignStates(this.carChargingStateId);
+        this.subscribeVehicleForeignStates();
 
         // initialize car position (static or from foreign)
         await this.initCarPosition();
@@ -2360,6 +2533,11 @@ async onReady() {
 
     async onStateChange(id, state) {
         if (!state) return;
+
+        if (this.vehicleForeignMap && this.vehicleForeignMap[id]) {
+            const handled = await this.handleVehicleForeignStateChange(id, state);
+            if (handled) return;
+        }
 
         // foreign car position updates (usually ack=true)
         if (id === this.carLatStateId || id === this.carLonStateId) {
@@ -2641,7 +2819,7 @@ async onReady() {
 
         const payload = {
             exportedAt: new Date().toISOString(),
-            adapter: 'carcharging',
+            adapter: 'cpt',
             version: this.version,
             interval: Number(this.config.interval) || 5,
             channels: Array.isArray(this.config.channels) ? this.config.channels : this.config.channels || [],

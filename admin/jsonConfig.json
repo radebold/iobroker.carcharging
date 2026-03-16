@@ -235,93 +235,194 @@
     "car": {
       "type": "panel",
       "label": {
-        "de": "Auto",
-        "en": "Car"
+        "de": "Fahrzeuge",
+        "en": "Vehicles"
       },
       "items": {
-        "carLatStateId": {
-          "type": "text",
+        "vehicles": {
+          "type": "table",
           "label": {
-            "de": "State-ID Latitude (extern)",
-            "en": "Latitude state id (foreign)"
+            "de": "Fahrzeugliste",
+            "en": "Vehicle list"
           },
+          "newLine": true,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xs": 12,
+          "items": [
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "title": {
+                "de": "Aktiv",
+                "en": "Enabled"
+              },
+              "width": 80,
+              "default": true
+            },
+            {
+              "type": "text",
+              "attr": "id",
+              "title": {
+                "de": "ID",
+                "en": "ID"
+              },
+              "width": 100
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": {
+                "de": "Name",
+                "en": "Name"
+              },
+              "width": 120
+            },
+            {
+              "type": "text",
+              "attr": "carLatStateId",
+              "title": {
+                "de": "Latitude State-ID",
+                "en": "Latitude state id"
+              },
+              "width": 220
+            },
+            {
+              "type": "text",
+              "attr": "carLonStateId",
+              "title": {
+                "de": "Longitude State-ID",
+                "en": "Longitude state id"
+              },
+              "width": 220
+            },
+            {
+              "type": "text",
+              "attr": "carSocStateId",
+              "title": {
+                "de": "SoC State-ID",
+                "en": "SoC state id"
+              },
+              "width": 220
+            },
+            {
+              "type": "text",
+              "attr": "carConnectedStateId",
+              "title": {
+                "de": "Connected State-ID",
+                "en": "Connected state id"
+              },
+              "width": 220
+            },
+            {
+              "type": "text",
+              "attr": "carChargingStateId",
+              "title": {
+                "de": "Charging State-ID",
+                "en": "Charging state id"
+              },
+              "width": 220
+            }
+          ],
           "help": {
-            "de": "Optional: Datenpunkt mit Latitude deines Autos (z. B. aus Home Assistant / Tesla / etc.).",
-            "en": "Optional: data point containing your car latitude."
+            "de": "Das erste aktive Fahrzeug wird als primäres Fahrzeug für Distanz, Notify und VIS-Kompatibilität verwendet. Alle Fahrzeuge werden zusätzlich unter carcharging.0.vehicles.* gespiegelt.",
+            "en": "The first enabled vehicle is used as the primary vehicle for distance, notify and VIS compatibility. All vehicles are mirrored under carcharging.0.vehicles.*."
           }
         },
-        "carLonStateId": {
-          "type": "text",
-          "label": {
-            "de": "State-ID Longitude (extern)",
-            "en": "Longitude state id (foreign)"
-          },
-          "help": {
-            "de": "Optional: Datenpunkt mit Longitude deines Autos.",
-            "en": "Optional: data point containing your car longitude."
-          }
-        },
-        "carSocStateId": {
-          "type": "text",
-          "label": {
-            "de": "State-ID Ladestand (SoC %) (extern)",
-            "en": "SoC state id (percent) (foreign)"
-          },
-          "help": {
-            "de": "Optional: Datenpunkt mit Ladestand in Prozent (z. B. 23.5). Wird für Benachrichtigungs-Filter genutzt.",
-            "en": "Optional: data point containing state of charge in percent. Used for notification filters."
-          }
-        },
-        "carConnectedStateId": {
-          "type": "text",
-          "label": {
-            "de": "State-ID verbunden (extern)",
-            "en": "Connected state id (foreign)"
-          },
-          "help": {
-            "de": "Optional: Datenpunkt, der anzeigt, ob das Auto verbunden/angesteckt ist.",
-            "en": "Optional: data point indicating whether the car is connected/plugged in."
-          }
-        },
-        "carChargingStateId": {
-          "type": "text",
-          "label": {
-            "de": "State-ID lädt (extern)",
-            "en": "Charging state id (foreign)"
-          },
-          "help": {
-            "de": "Optional: Datenpunkt, der anzeigt, ob das Auto gerade lädt. Wenn verbunden oder lädt, wird 'Nächste freie Typ2' in der VIS ausgeblendet.",
-            "en": "Optional: data point indicating whether the car is currently charging. If connected or charging, 'Nearest available Type2' is hidden in VIS."
-          }
-        },
-        "staticPosition": {
+        "legacySingleVehicle": {
           "type": "panel",
           "label": {
-            "de": "Statische Position (optional)",
-            "en": "Static position (optional)"
+            "de": "Legacy Einzel-Fahrzeug (optional)",
+            "en": "Legacy single vehicle (optional)"
           },
           "expanded": false,
           "items": {
-            "carLat": {
-              "type": "number",
+            "carLatStateId": {
+              "type": "text",
               "label": {
-                "de": "Latitude (statisch)",
-                "en": "Latitude (static)"
+                "de": "State-ID Latitude (extern)",
+                "en": "Latitude state id (foreign)"
               },
               "help": {
-                "de": "Optional: Feste Latitude. Wird als initialer Wert genutzt, wenn gesetzt.",
-                "en": "Optional: Static latitude. Used as initial value if set."
+                "de": "Optional: Datenpunkt mit Latitude deines Autos (z. B. aus Home Assistant / Tesla / etc.).",
+                "en": "Optional: data point containing your car latitude."
               }
             },
-            "carLon": {
-              "type": "number",
+            "carLonStateId": {
+              "type": "text",
               "label": {
-                "de": "Longitude (statisch)",
-                "en": "Longitude (static)"
+                "de": "State-ID Longitude (extern)",
+                "en": "Longitude state id (foreign)"
               },
               "help": {
-                "de": "Optional: Feste Longitude. Wird als initialer Wert genutzt, wenn gesetzt.",
-                "en": "Optional: Static longitude. Used as initial value if set."
+                "de": "Optional: Datenpunkt mit Longitude deines Autos.",
+                "en": "Optional: data point containing your car longitude."
+              }
+            },
+            "carSocStateId": {
+              "type": "text",
+              "label": {
+                "de": "State-ID Ladestand (SoC %) (extern)",
+                "en": "SoC state id (percent) (foreign)"
+              },
+              "help": {
+                "de": "Optional: Datenpunkt mit Ladestand in Prozent (z. B. 23.5). Wird für Benachrichtigungs-Filter genutzt.",
+                "en": "Optional: data point containing state of charge in percent. Used for notification filters."
+              }
+            },
+            "carConnectedStateId": {
+              "type": "text",
+              "label": {
+                "de": "State-ID verbunden (extern)",
+                "en": "Connected state id (foreign)"
+              },
+              "help": {
+                "de": "Optional: Datenpunkt, der anzeigt, ob das Auto verbunden/angesteckt ist.",
+                "en": "Optional: data point indicating whether the car is connected/plugged in."
+              }
+            },
+            "carChargingStateId": {
+              "type": "text",
+              "label": {
+                "de": "State-ID lädt (extern)",
+                "en": "Charging state id (foreign)"
+              },
+              "help": {
+                "de": "Optional: Datenpunkt, der anzeigt, ob das Auto gerade lädt. Wenn verbunden oder lädt, wird 'Nächste freie Typ2' in der VIS ausgeblendet.",
+                "en": "Optional: data point indicating whether the car is currently charging. If connected or charging, 'Nearest available Type2' is hidden in VIS."
+              }
+            },
+            "staticPosition": {
+              "type": "panel",
+              "label": {
+                "de": "Statische Position (optional)",
+                "en": "Static position (optional)"
+              },
+              "expanded": false,
+              "items": {
+                "carLat": {
+                  "type": "number",
+                  "label": {
+                    "de": "Latitude (statisch)",
+                    "en": "Latitude (static)"
+                  },
+                  "help": {
+                    "de": "Optional: Feste Latitude. Wird als initialer Wert genutzt, wenn gesetzt.",
+                    "en": "Optional: Static latitude. Used as initial value if set."
+                  }
+                },
+                "carLon": {
+                  "type": "number",
+                  "label": {
+                    "de": "Longitude (statisch)",
+                    "en": "Longitude (static)"
+                  },
+                  "help": {
+                    "de": "Optional: Feste Longitude. Wird als initialer Wert genutzt, wenn gesetzt.",
+                    "en": "Optional: Static longitude. Used as initial value if set."
+                  }
+                }
               }
             }
           }
