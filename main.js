@@ -554,6 +554,12 @@ class CptAdapter extends utils.Adapter {
         await this.setObjectNotExistsAsync(cityPrefix, { type: 'channel', common: { name: cityName }, native: {} });
     }
 
+
+    async cleanupLegacyObjects() {
+        try { await this.delObjectAsync('car', { recursive: true }); } catch (e) {}
+        try { await this.delObjectAsync('nearestType2', { recursive: true }); } catch (e) {}
+    }
+
     async ensureToolsObjects() {
         await this.setObjectNotExistsAsync('tools', { type: 'channel', common: { name: 'Tools' }, native: {} });
 
@@ -912,165 +918,34 @@ class CptAdapter extends utils.Adapter {
     }
 
     async ensureCarObjects() {
-        await this.setObjectNotExistsAsync('car', { type: 'channel', common: { name: 'Auto' }, native: {} });
-        await this.setObjectNotExistsAsync('car.lat', {
-            type: 'state',
-            common: { name: 'Auto Latitude', type: 'number', role: 'value.gps.latitude', read: true, write: false },
-            native: {},
-        });
-        await this.setObjectNotExistsAsync('car.lon', {
-            type: 'state',
-            common: { name: 'Auto Longitude', type: 'number', role: 'value.gps.longitude', read: true, write: false },
-            native: {},
-        });
-        await this.setObjectNotExistsAsync('car.soc', {
-            type: 'state',
-            common: { name: 'Auto Ladestand (SoC)', type: 'number', role: 'value.battery', unit: '%', read: true, write: false },
-            native: {},
-        });
-        await this.setObjectNotExistsAsync('car.connected', {
-            type: 'state',
-            common: { name: 'Auto verbunden', type: 'boolean', role: 'indicator.connected', read: true, write: false },
-            native: {},
-        });
-        await this.setObjectNotExistsAsync('car.charging', {
-            type: 'state',
-            common: { name: 'Auto lädt', type: 'boolean', role: 'indicator', read: true, write: false },
-            native: {},
-        });
-        await this.setObjectNotExistsAsync('car.source', {
-            type: 'state',
-            common: { name: 'Quelle (State-ID oder static)', type: 'string', role: 'text', read: true, write: false },
-            native: {},
-        });
-        await this.setObjectNotExistsAsync('car.lastUpdate', {
-            type: 'state',
-            common: { name: 'Letztes Update', type: 'string', role: 'date', read: true, write: false },
-            native: {},
-        });
+        return;
     }
 
     async ensureNearestType2Objects() {
-        await this.setObjectNotExistsAsync('nearestType2', { type: 'channel', common: { name: 'Nächste freie Typ2' }, native: {} });
-
-        const mk = async (id, common) => this.setObjectNotExistsAsync(`nearestType2.${id}`, { type: 'state', common, native: {} });
-
-        await mk('name', { name: 'Name', type: 'string', role: 'text', read: true, write: false });
-        await mk('address', { name: 'Adresse', type: 'string', role: 'text', read: true, write: false });
-        await mk('distance.m', { name: 'Distanz (m)', type: 'number', role: 'value.distance', unit: 'm', read: true, write: false });
-        await mk('distance.km', { name: 'Distanz (km)', type: 'number', role: 'value.distance', unit: 'km', read: true, write: false });
-        await mk('distanceType', { name: 'Distanzquelle', type: 'string', role: 'text', read: true, write: false });
-        await mk('freePorts', { name: 'Freie Ports', type: 'number', role: 'value', read: true, write: false });
-        await mk('portCount', { name: 'Ports gesamt', type: 'number', role: 'value', read: true, write: false });
-        await mk('lat', { name: 'Latitude', type: 'number', role: 'value.gps.latitude', read: true, write: false });
-        await mk('lon', { name: 'Longitude', type: 'number', role: 'value.gps.longitude', read: true, write: false });
-        await mk('stationId', { name: 'Station ID', type: 'string', role: 'text', read: true, write: false });
-        await mk('lastUpdate', { name: 'Letztes Update', type: 'string', role: 'date', read: true, write: false });
-        await mk('lastError', { name: 'Letzter Fehler', type: 'string', role: 'text', read: true, write: false });
+        return;
     }
 
     async initCarPosition() {
-        // Prefer external state mapping if configured.
-        // Static values are only used as fallback (e.g. initial value) if no external IDs are set or they are invalid/unavailable.
-        const hasExternal = !!(this.carLatStateId || this.carLonStateId);
-
-        // try to read foreign states (if configured)
-        const lat = this.carLatStateId ? await this.getForeignStateAsync(this.carLatStateId).catch(() => null) : null;
-        const lon = this.carLonStateId ? await this.getForeignStateAsync(this.carLonStateId).catch(() => null) : null;
-
-        const latRaw = lat && lat.val !== undefined ? lat.val : undefined;
-        const lonRaw = lon && lon.val !== undefined ? lon.val : undefined;
-        const latN = latRaw !== undefined ? parseNumberLocale(latRaw) : NaN;
-        const lonN = lonRaw !== undefined ? parseNumberLocale(lonRaw) : NaN;
-        this.log.debug(`Auto init: latId='${this.carLatStateId}' val='${latRaw}' parsed=${latN}; lonId='${this.carLonStateId}' val='${lonRaw}' parsed=${lonN}`);
-        if (Number.isFinite(latN) && Number.isFinite(lonN)) {
-            this.carLat = latN;
-            this.carLon = lonN;
-            await this.setStateAsync('car.lat', { val: this.carLat, ack: true });
-            await this.setStateAsync('car.lon', { val: this.carLon, ack: true });
-            await this.setStateAsync('car.source', { val: `${this.carLatStateId || ''} | ${this.carLonStateId || ''}`.trim(), ack: true });
-            await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-            return;
-        }
-
-        // static values from config as fallback
-        if (!hasExternal &&
-            typeof this.carLatStatic === 'number' && Number.isFinite(this.carLatStatic) &&
-            typeof this.carLonStatic === 'number' && Number.isFinite(this.carLonStatic)) {
-            this.carLat = this.carLatStatic;
-            this.carLon = this.carLonStatic;
-            await this.setStateAsync('car.lat', { val: this.carLat, ack: true });
-            await this.setStateAsync('car.lon', { val: this.carLon, ack: true });
-            await this.setStateAsync('car.source', { val: 'static', ack: true });
-            await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-            return;
-        }
-
-        // If external IDs are configured but invalid right now, fall back to static if available
-        if (hasExternal &&
-            typeof this.carLatStatic === 'number' && Number.isFinite(this.carLatStatic) &&
-            typeof this.carLonStatic === 'number' && Number.isFinite(this.carLonStatic)) {
-            this.carLat = this.carLatStatic;
-            this.carLon = this.carLonStatic;
-            await this.setStateAsync('car.lat', { val: this.carLat, ack: true });
-            await this.setStateAsync('car.lon', { val: this.carLon, ack: true });
-            await this.setStateAsync('car.source', { val: 'static_fallback', ack: true });
-            await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-            return;
-        }
-
-        // No valid position found
-        this.log.debug('Auto init: keine gültige Position (weder extern noch statisch)');
+        return;
     }
 
     async initCarSoc() {
-        if (!this.carSocStateId) return;
-        const st = await this.getForeignStateAsync(this.carSocStateId).catch(() => null);
-        const raw = st && st.val !== undefined ? st.val : undefined;
-        const soc = raw !== undefined ? parseNumberLocale(raw) : NaN;
-        this.log.debug(`Auto init SoC: socId='${this.carSocStateId}' val='${raw}' parsed=${soc}`);
-        if (Number.isFinite(soc)) {
-            this.carSoc = soc;
-            await this.setStateAsync('car.soc', { val: soc, ack: true });
-            await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-        }
-
-        // also refresh nearest type2 (SoC change can trigger notifications / relevance)
-        this.scheduleNearestType2Update('socChange');
+        return;
     }
 
 
     async initCarConnected() {
-        if (!this.carConnectedStateId) return;
-        const st = await this.getForeignStateAsync(this.carConnectedStateId).catch(() => null);
-        const parsed = st && st.val !== undefined ? parseConnectedState(st.val) : null;
-        this.log.debug(`Auto init connected: stateId='${this.carConnectedStateId}' val='${st && st.val !== undefined ? st.val : undefined}' parsed=${parsed}`);
-        if (parsed !== null) {
-            this.carConnected = parsed;
-            await this.setStateAsync('car.connected', { val: parsed, ack: true });
-            await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-        }
+        return;
     }
 
     async initCarCharging() {
-        if (!this.carChargingStateId) return;
-        const st = await this.getForeignStateAsync(this.carChargingStateId).catch(() => null);
-        const parsed = st && st.val !== undefined ? parseChargingState(st.val) : null;
-        this.log.debug(`Auto init charging: stateId='${this.carChargingStateId}' val='${st && st.val !== undefined ? st.val : undefined}' parsed=${parsed}`);
-        if (parsed !== null) {
-            this.carCharging = parsed;
-            await this.setStateAsync('car.charging', { val: parsed, ack: true });
-            await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-        }
+        return;
     }
 
     async updateCarConnected(value, source) {
         const parsed = parseConnectedState(value);
         if (parsed === null) return;
         this.carConnected = parsed;
-        await this.setStateAsync('car.connected', { val: parsed, ack: true });
-        await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-        if (source) this.log.debug(`Auto connected update from ${source}: ${parsed}`);
         this.scheduleVisHtmlUpdate('carConnectedChange');
     }
 
@@ -1078,17 +953,11 @@ class CptAdapter extends utils.Adapter {
         const parsed = parseChargingState(value);
         if (parsed === null) return;
         this.carCharging = parsed;
-        await this.setStateAsync('car.charging', { val: parsed, ack: true });
-        await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-        if (source) this.log.debug(`Auto charging update from ${source}: ${parsed}`);
         this.scheduleVisHtmlUpdate('carChargingChange');
     }
 
     shouldShowNearestType2Card() {
-        const connectedKnown = typeof this.carConnected === 'boolean';
-        const chargingKnown = typeof this.carCharging === 'boolean';
-        if (!connectedKnown && !chargingKnown) return true;
-        return !(this.carConnected === true || this.carCharging === true);
+        return false;
     }
 
     buildBBox(lat, lon, radiusM) {
@@ -1350,12 +1219,6 @@ class CptAdapter extends utils.Adapter {
         const socN = parseNumberLocale(soc);
         if (!Number.isFinite(socN)) return;
         this.carSoc = socN;
-        await this.setStateAsync('car.soc', { val: socN, ack: true });
-        if (source) {
-            // Keep car.source focused on mapping info
-            await this.setStateAsync('car.source', { val: source, ack: true });
-        }
-        await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
         await this.handleCarContextChange('socChange');
     }
 
@@ -1363,32 +1226,15 @@ class CptAdapter extends utils.Adapter {
         try {
             const latNum = parseNumberLocale(lat);
             const lonNum = parseNumberLocale(lon);
-
-            if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) {
-                this.log.debug('Auto pos: invalid lat/lon');
-                return;
-            }
-
+            if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) return;
             const prevLat = this.carLat;
             const prevLon = this.carLon;
             const changed = (!Number.isFinite(prevLat) || !Number.isFinite(prevLon) || prevLat !== latNum || prevLon !== lonNum);
             this.carLat = latNum;
             this.carLon = lonNum;
-
-            await this.updateStateIfChanged('car.lat', latNum);
-            await this.updateStateIfChanged('car.lon', lonNum);
-            await this.updateStateIfChanged('car.source', source || '');
-            await this.setStateAsync('car.lastUpdate', { val: new Date().toISOString(), ack: true });
-
-            // Only (re)calculate when the position actually changed
             if (changed) {
-                // Update distances immediately so notify filters have fresh values
                 await this.updateDistancesForAllStations();
-
                 this.scheduleCarDistanceUpdate('carPosChange');
-                this.scheduleNearestType2Update('carPosChange');
-
-                // Allow notifications again when the position (grid) changed
                 await this.handleCarContextChange('carPosChange');
             }
         } catch (e) {
@@ -1805,7 +1651,6 @@ class CptAdapter extends utils.Adapter {
         }
 
         this.scheduleVisHtmlUpdate('poll finished');
-        this.scheduleNearestType2Update('poll finished');
         await this.updateNearestForAllVehicles();
         await this.updateWidgetsVehicleCards();
         // remove objects for stations that were removed from config
@@ -1973,14 +1818,7 @@ async cleanupObsoleteStations(currentPrefixes) {
     }
 
     scheduleNearestType2Update(reason = '') {
-        if (!isTrue(this.config.nearestType2Enabled)) return;
-        if (!Number.isFinite(this.carLat) || !Number.isFinite(this.carLon)) return;
-        if (this.nearestTimer) clearTimeout(this.nearestTimer);
-        this.nearestTimer = setTimeout(() => {
-            this.updateNearestType2(this.carLat, this.carLon)
-                .catch((e) => this.log.debug(`nearestType2 Update fehlgeschlagen: ${e.message}`));
-        }, this.nearestDebounceMs);
-        if (reason) this.log.debug(`nearestType2 Update geplant: ${reason}`);
+        return;
     }
 
     async ensureVisHtmlObject() {
@@ -2563,30 +2401,15 @@ async onReady() {
         }
 
         await this.ensureToolsObjects();
-        await this.ensureCarObjects();
+        await this.cleanupLegacyObjects();
         await this.ensureVehiclesObjects();
         await this.ensureWidgetsObjects();
         await this.refreshConfiguredVehicles();
         await this.updateNearestForAllVehicles();
         await this.updateWidgetsVehicleCards();
-        await this.ensureNearestType2Objects();
 
-        // subscribe to foreign car position states (optional)
-        if (this.carLatStateId) this.subscribeForeignStates(this.carLatStateId);
-        if (this.carLonStateId) this.subscribeForeignStates(this.carLonStateId);
-        if (this.carSocStateId) this.subscribeForeignStates(this.carSocStateId);
-        if (this.carConnectedStateId) this.subscribeForeignStates(this.carConnectedStateId);
-        if (this.carChargingStateId) this.subscribeForeignStates(this.carChargingStateId);
         this.subscribeVehicleForeignStates();
-
-        // initialize car position (static or from foreign)
-        await this.initCarPosition();
-        await this.initCarSoc();
-        await this.initCarConnected();
-        await this.initCarCharging();
-        // initial distance calc + nearest station (if car GPS is known)
         this.scheduleCarDistanceUpdate('initial');
-        this.scheduleNearestType2Update('initial');
 
         this.subscribeStates('tools.export');
         this.subscribeStates('tools.testNotify');

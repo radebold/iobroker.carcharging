@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "carcharging",
-    "version": "0.1.0-alpha.16",
+    "version": "0.1.0-alpha.17",
     "title": "CarCharging",
     "titleLang": {
       "en": "CarCharging",
@@ -58,6 +58,9 @@
       },
       "0.1.0-alpha.16": {
         "en": "Connector configuration simplified: supportsType2 / supportsCCS flags per vehicle."
+      },
+      "0.1.0-alpha.17": {
+        "en": "Removed legacy car and nearestType2 object creation; cleaned object structure."
       }
     }
   },
