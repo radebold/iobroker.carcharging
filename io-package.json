@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "carcharging",
-    "version": "0.1.0-alpha.11",
+    "version": "0.1.0-alpha.12",
     "title": "CarCharging",
     "titleLang": {
       "en": "CarCharging",
@@ -43,6 +43,9 @@
       },
       "0.1.0-alpha.11": {
         "en": "Cleaned package, removed backup files, improved branding and kept CPT-based multi-vehicle logic."
+      },
+      "0.1.0-alpha.12": {
+        "en": "Added stable widget state defaults and CPT-style VIS template."
       }
     }
   },
