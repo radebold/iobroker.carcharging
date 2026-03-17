@@ -1,6 +1,6 @@
 {
   "name": "iobroker.carcharging",
-  "version": "0.1.0-alpha.18",
+  "version": "0.1.0-alpha.19",
   "description": "ioBroker adapter for EV charging stations with multi-vehicle support",
   "main": "main.js",
   "author": "radebold <radebold@gmail.com>",

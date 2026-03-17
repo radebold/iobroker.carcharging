@@ -380,7 +380,7 @@
             "en": "Notify only if SoC < (%)"
           },
           "help": {
-            "de": "Benachrichtigung wird nur gesendet, wenn der Auto-Ladestand (SoC) unter diesem Wert liegt.",
+            "de": "Benachrichtigung wird nur gesendet, wenn der Fahrzeug-Ladestand (SoC) unter diesem Wert liegt.",
             "en": "Notification is sent only if car SoC is below this value."
           }
         },
@@ -393,7 +393,7 @@
             "en": "Notify only if distance <= (m)"
           },
           "help": {
-            "de": "Benachrichtigung wird nur gesendet, wenn die Distanz zur Station <= diesem Wert ist (Auto-Lat/Lon muss vorhanden sein).",
+            "de": "Benachrichtigung wird nur gesendet, wenn die Distanz zur Station <= diesem Wert ist (Fahrzeug-Lat/Lon muss vorhanden sein).",
             "en": "Notification is sent only if distance to the station is <= this value (car lat/lon required)."
           }
         },
@@ -414,11 +414,11 @@
           "type": "checkbox",
           "default": false,
           "label": {
-            "de": "Nächste freie Typ2-Station suchen",
+            "de": "Nächste kompatible Ladestation suchen",
             "en": "Search nearest available Type2"
           },
           "help": {
-            "de": "Ermittelt anhand der Auto-GPS-Position die nächste freie Typ2-Ladestation (ChargePoint Map API).",
+            "de": "Ermittelt anhand der Fahrzeug-GPS-Position die nächste freie Ladestation mit kompatiblem Steckertyp (Typ2 / CCS) (ChargePoint Map API).",
             "en": "Uses car GPS position to find the nearest available Type2 charging station (ChargePoint Map API)."
           }
         },
@@ -427,7 +427,7 @@
           "min": 100,
           "default": 2000,
           "label": {
-            "de": "Suchradius (Meter)",
+            "de": "Suchradius für Ladestationen (Meter)",
             "en": "Search radius (meters)"
           }
         },
@@ -437,7 +437,7 @@
           "max": 50,
           "default": 10,
           "label": {
-            "de": "Max. Ergebnisse",
+            "de": "Maximale Anzahl Ergebnisse",
             "en": "Max results"
           }
         }
@@ -597,7 +597,7 @@
           "type": "header",
           "size": 3,
           "text": {
-            "de": "Reiter Auto",
+            "de": "Reiter Fahrzeug",
             "en": "Car tab"
           }
         },
@@ -636,7 +636,7 @@
         "tomtomText1": {
           "type": "staticText",
           "text": {
-            "de": "Wenn ein TomTom API-Key eingetragen ist, berechnet CarCharging die Fahrdistanz mit dem Auto statt Luftlinie. Ohne API-Key bleibt automatisch die Luftlinienberechnung aktiv.",
+            "de": "Wenn ein TomTom API-Key eingetragen ist, berechnet CarCharging die Fahrdistanz mit dem Fahrzeug statt Luftlinie. Ohne API-Key bleibt automatisch die Luftlinienberechnung aktiv.",
             "en": "If a TomTom API key is configured, CPT calculates driving distance by car instead of airline distance. Without an API key, airline distance remains active automatically."
           }
         },
@@ -682,7 +682,7 @@
         "statusText1": {
           "type": "staticText",
           "text": {
-            "de": "Typische Statuswerte sind frei, belegt und fault. Freie Ports und Portanzahl werden in der Stationsliste und in der Karte „Nächste freie Typ2“ angezeigt.",
+            "de": "Typische Statuswerte sind frei, belegt und fault. Freie Ladepunkte und Portanzahl werden in der Stationsliste und in der Karte „Nächste freie Typ2“ angezeigt.",
             "en": "Typical status values are available, occupied and fault. Free ports and total port count are shown in the station list and in the “Nearest available Type2” card."
           }
         },
@@ -714,7 +714,7 @@
         "tipsText3": {
           "type": "staticText",
           "text": {
-            "de": "3. Optional Auto-State-IDs und statische Position hinterlegen.",
+            "de": "3. Optional Fahrzeug-State-IDs und statische Position hinterlegen.",
             "en": "3. Optionally configure car state IDs and a static position."
           }
         },
