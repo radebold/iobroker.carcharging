@@ -280,49 +280,69 @@
               "width": 120
             },
             {
-              "type": "text",
+              "type": "objectId",
               "attr": "carLatStateId",
               "title": {
-                "de": "Latitude State-ID",
-                "en": "Latitude state id"
+                "de": "Latitude Objekt",
+                "en": "Latitude object"
               },
-              "width": 220
+              "width": 220,
+              "label": {
+                "de": "Latitude Objekt",
+                "en": "Latitude object"
+              }
             },
             {
-              "type": "text",
+              "type": "objectId",
               "attr": "carLonStateId",
               "title": {
-                "de": "Longitude State-ID",
-                "en": "Longitude state id"
+                "de": "Longitude Objekt",
+                "en": "Longitude object"
               },
-              "width": 220
+              "width": 220,
+              "label": {
+                "de": "Longitude Objekt",
+                "en": "Longitude object"
+              }
             },
             {
-              "type": "text",
+              "type": "objectId",
               "attr": "carSocStateId",
               "title": {
-                "de": "SoC State-ID",
-                "en": "SoC state id"
+                "de": "SoC Objekt",
+                "en": "SoC object"
               },
-              "width": 220
+              "width": 220,
+              "label": {
+                "de": "SoC Objekt",
+                "en": "SoC object"
+              }
             },
             {
-              "type": "text",
+              "type": "objectId",
               "attr": "carConnectedStateId",
               "title": {
-                "de": "Connected State-ID",
-                "en": "Connected state id"
+                "de": "Connected Objekt",
+                "en": "Connected object"
               },
-              "width": 220
+              "width": 220,
+              "label": {
+                "de": "Connected Objekt",
+                "en": "Connected object"
+              }
             },
             {
-              "type": "text",
+              "type": "objectId",
               "attr": "carChargingStateId",
               "title": {
-                "de": "Charging State-ID",
-                "en": "Charging state id"
+                "de": "Charging Objekt",
+                "en": "Charging object"
               },
-              "width": 220
+              "width": 220,
+              "label": {
+                "de": "Charging Objekt",
+                "en": "Charging object"
+              }
             },
             {
               "type": "checkbox",
