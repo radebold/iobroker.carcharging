@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "carcharging",
-    "version": "0.1.0-alpha.14",
+    "version": "0.1.0-alpha.16",
     "title": "CarCharging",
     "titleLang": {
       "en": "CarCharging",
@@ -52,6 +52,12 @@
       },
       "0.1.0-alpha.14": {
         "en": "Per-vehicle connector types, cleaned object structure and nearest station filtering by connector type."
+      },
+      "0.1.0-alpha.15": {
+        "en": "Vehicle connector types changed from CSV text to multi-select dropdown in admin UI."
+      },
+      "0.1.0-alpha.16": {
+        "en": "Connector configuration simplified: supportsType2 / supportsCCS flags per vehicle."
       }
     }
   },

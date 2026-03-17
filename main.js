@@ -658,6 +658,8 @@ class CptAdapter extends utils.Adapter {
             carSocStateId: String(v.carSocStateId || '').trim(),
             carConnectedStateId: String(v.carConnectedStateId || '').trim(),
             carChargingStateId: String(v.carChargingStateId || '').trim(),
+            supportsType2: v.supportsType2 !== false,
+            supportsCCS: v.supportsCCS !== false,
             connectorTypes: parseConnectorTypes(v.connectorTypes),
         })).filter(v => !!v.id && v.enabled !== false);
     }
@@ -760,6 +762,19 @@ class CptAdapter extends utils.Adapter {
         return selected.includes(norm);
     }
 
+    
+    portMatchesVehicleConnectorFlags(displayPlugType, v) {
+        if (!displayPlugType) return false;
+        const t = String(displayPlugType).toLowerCase();
+        if (t.includes("type2") || t.includes("type_2")) {
+            return v.supportsType2;
+        }
+        if (t.includes("ccs") || t.includes("combo")) {
+            return v.supportsCCS;
+        }
+        return false;
+    }
+
     async updateNearestForVehicle(vehicleId) {
         const v = this.vehiclesConfig.find(x => x.id === vehicleId);
         if (!v) return;
@@ -782,7 +797,7 @@ class CptAdapter extends utils.Adapter {
             for (let p = 1; p <= Math.max(0, maxPorts); p++) {
                 const plugState = await this.getStateAsync(`${rel}.ports.${p}.displayPlugType`).catch(() => null);
                 const plugType = plugState && plugState.val ? String(plugState.val) : '';
-                if (!this.portMatchesVehicleConnectorTypes(plugType, v.connectorTypes)) continue;
+                if (!this.portMatchesVehicleConnectorFlags(plugType, v.connectorTypes)) continue;
                 matchingPortCount++;
                 const statusV2 = await this.getStateAsync(`${rel}.ports.${p}.statusV2`).catch(() => null);
                 const status = this.normalizeStatus(statusV2 && statusV2.val ? statusV2.val : '');

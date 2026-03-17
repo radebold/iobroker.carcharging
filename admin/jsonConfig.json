@@ -325,17 +325,24 @@
               "width": 220
             },
             {
-              "type": "text",
-              "attr": "connectorTypes",
+              "type": "checkbox",
+              "attr": "supportsType2",
               "title": {
-                "de": "Steckertypen",
-                "en": "Connector types"
+                "de": "Typ2",
+                "en": "Type2"
               },
-              "width": 220,
-              "help": {
-                "de": "Kommagetrennt, z. B. type2,ccs. Unterstützt: type2, ccs, chademo, type1, schuko, cee_blue, cee_red, nacs, dc_fast",
-                "en": "Comma separated, e.g. type2,ccs. Supported: type2, ccs, chademo, type1, schuko, cee_blue, cee_red, nacs, dc_fast"
-              }
+              "width": 80,
+              "default": true
+            },
+            {
+              "type": "checkbox",
+              "attr": "supportsCCS",
+              "title": {
+                "de": "CCS",
+                "en": "CCS"
+              },
+              "width": 80,
+              "default": true
             }
           ],
           "help": {
