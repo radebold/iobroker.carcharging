@@ -1,137 +1,33 @@
 <div id="cc-cpt-root"></div>
-
 <script>
 (function () {
-    const NS = 'carcharging.0';
-    const WIDGET_STATE = NS + '.widgets.vehicleCards';
-
-    function esc(v) {
-        return String(v == null ? '' : v)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;');
-    }
-
-    function badge(text, kind) {
-        const styles = {
-            ok:      'background:rgba(46,204,113,.18); border:1px solid rgba(46,204,113,.45);',
-            warn:    'background:rgba(241,196,15,.18); border:1px solid rgba(241,196,15,.45);',
-            bad:     'background:rgba(231,76,60,.18); border:1px solid rgba(231,76,60,.45);',
-            neutral: 'background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);'
-        };
-        return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;white-space:nowrap;' + (styles[kind] || styles.neutral) + '">' + text + '</span>';
-    }
-
-    function fmtDistance(m) {
-        const n = Number(m);
-        if (!isFinite(n)) return '—';
-        if (n < 1000) return Math.round(n) + ' m';
-        return (n / 1000).toFixed(2) + ' km';
-    }
-
-    function fmtRefresh(ts) {
-        if (!ts) return '—';
-        const d = new Date(ts);
-        if (!isFinite(d.getTime())) return '—';
-        return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function read(id) {
-        try { return vis.states.attr(id + '.val'); } catch (e) { return null; }
-    }
-
-    function boolText(v) {
-        if (v === true || v === 'true' || v === 1 || v === '1') return 'Ja';
-        if (v === false || v === 'false' || v === 0 || v === '0') return 'Nein';
-        return '—';
-    }
-
-    function boolKind(v, trueKind, falseKind) {
-        if (v === true || v === 'true' || v === 1 || v === '1') return trueKind || 'ok';
-        if (v === false || v === 'false' || v === 0 || v === '0') return falseKind || 'neutral';
-        return 'neutral';
-    }
-
-    function render() {
-        const raw = read(WIDGET_STATE) || '[]';
-        const lastRefresh = read(NS + '.tools.lastRefresh');
-        let data = [];
-        try { data = JSON.parse(raw); } catch (e) { data = []; }
-
-        let html = ''
-            + '<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:14px;color:#fff;">'
-            + '  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;">'
-            + '    <div style="display:flex;align-items:baseline;gap:8px;">'
-            + '      <span style="font-weight:800;font-size:16px;">⚡ CarCharging</span>'
-            + '    </div>'
-            + '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">'
-            + '      <button onclick="vis.conn.setState(\'' + NS + '.tools.refreshNow\', true)"'
-            + '       style="background:#2b8cff;border:none;color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Refresh</button>'
-            + '      <div style="opacity:.75;font-size:12px;">Last refresh: ' + esc(fmtRefresh(lastRefresh)) + '</div>'
-            + '    </div>'
-            + '  </div>';
-
-        if (!data.length) {
-            html += '<div style="border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;background:rgba(0,0,0,.18);">Keine Fahrzeugdaten vorhanden.</div></div>';
-            document.getElementById('cc-cpt-root').innerHTML = html;
-            return;
-        }
-
-        html += '<div style="border:1px solid rgba(255,255,255,.12);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.18);box-shadow:0 10px 24px rgba(0,0,0,.28);"><div style="padding:10px;display:grid;gap:10px;">';
-
-        data.forEach(function(v) {
-            const soc = (v && v.soc != null && v.soc !== '') ? Number(v.soc) : null;
-            const socText = soc != null && isFinite(soc) ? Math.round(soc) + ' %' : '—';
-            const socKind = soc == null ? 'neutral' : (soc < 20 ? 'bad' : soc < 40 ? 'warn' : 'ok');
-
-            const connected = boolText(v && v.connected);
-            const charging = boolText(v && v.charging);
-
-            const nearest = v && v.nearest ? v.nearest : {};
-            const station = nearest.station || '—';
-            const city = nearest.city || '';
-            const distance = fmtDistance(nearest.distanceM);
-            const freePorts = Number(nearest.freePorts || 0);
-            const portCount = Number(nearest.portCount || 0);
-            const status = nearest.status || '';
-            const statusKind = freePorts > 0 ? 'ok' : (status && String(status).toLowerCase().includes('in_use') ? 'warn' : 'neutral');
-
-            html += ''
-                + '<div style="border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.03);">'
-                + '  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">'
-                + '    <div style="min-width:0;flex:1 1 auto;">'
-                + '      <div style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-                +           esc(v.name || v.id || 'Fahrzeug')
-                + '      </div>'
-                + '      <div style="opacity:.8;font-size:12px;margin-top:4px;">'
-                +           badge('Ladezustand: ' + esc(socText), socKind)
-                + '      </div>'
-                + '    </div>'
-                + '    <div style="flex:0 0 auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
-                +       badge('Verbunden: ' + esc(connected), boolKind(v.connected, 'ok', 'neutral'))
-                +       badge('Lädt: ' + esc(charging), boolKind(v.charging, 'ok', 'neutral'))
-                + '    </div>'
-                + '  </div>'
-                + '  <div style="margin-top:10px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">'
-                + '    <div style="min-width:0;flex:1 1 auto;">'
-                + '      <div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
-                +          esc((city ? city + ' · ' : '') + station)
-                + '      </div>'
-                + '      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
-                +          badge('Distanz: ' + esc(distance), 'neutral')
-                +          badge('Ports: ' + esc(freePorts + '/' + portCount + ' frei'), statusKind)
-                +          badge(esc(status || '—'), statusKind)
-                + '      </div>'
-                + '    </div>'
-                + '  </div>'
-                + '</div>';
-        });
-
-        html += '</div></div></div>';
-        document.getElementById('cc-cpt-root').innerHTML = html;
-    }
-
-    render();
-    setInterval(render, 5000);
+  const NS='carcharging.0';
+  const STATE=NS + '.widgets.vehicleCards';
+  function esc(v){return String(v==null?'':v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+  function badge(t,k){const s={ok:'background:rgba(46,204,113,.18); border:1px solid rgba(46,204,113,.45);',warn:'background:rgba(241,196,15,.18); border:1px solid rgba(241,196,15,.45);',bad:'background:rgba(231,76,60,.18); border:1px solid rgba(231,76,60,.45);',neutral:'background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);'}; return '<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;white-space:nowrap;'+(s[k]||s.neutral)+'">'+t+'</span>';}
+  function rd(id){try{return vis.states.attr(id+'.val');}catch(e){return null;}}
+  function fmtD(m){m=Number(m); if(!isFinite(m)) return '—'; return m<1000?Math.round(m)+' m':(m/1000).toFixed(2)+' km';}
+  function fmtR(ts){if(!ts) return '—'; const d=new Date(ts); if(!isFinite(d.getTime())) return '—'; return d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});}
+  function boolTxt(v){ if(v===true||v==='true'||v===1||v==='1') return 'Ja'; if(v===false||v==='false'||v===0||v==='0') return 'Nein'; return '—';}
+  function boolKind(v){ if(v===true||v==='true'||v===1||v==='1') return 'ok'; if(v===false||v==='false'||v===0||v==='0') return 'neutral'; return 'neutral';}
+  function render(){
+    let arr=[]; try{arr=JSON.parse(rd(STATE)||'[]')}catch(e){}
+    let html='<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;font-size:14px;color:#fff;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;"><div style="font-weight:800;font-size:16px;">⚡ CarCharging</div><div style="display:flex;align-items:center;gap:8px;"><button onclick="vis.conn.setState(\''+NS+'.tools.refreshNow\', true)" style="background:#2b8cff;border:none;color:white;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Refresh</button><div style="opacity:.75;font-size:12px;">Last refresh: '+esc(fmtR(rd(NS+'.tools.lastRefresh')))+'</div></div></div>';
+    if(!arr.length){document.getElementById('cc-cpt-root').innerHTML=html+'<div style="border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;background:rgba(0,0,0,.18);">Keine Fahrzeugdaten vorhanden.</div></div>'; return;}
+    html+='<div style="border:1px solid rgba(255,255,255,.12);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.18);box-shadow:0 10px 24px rgba(0,0,0,.28);"><div style="padding:10px;display:grid;gap:10px;">';
+    arr.forEach(function(v){
+      const soc=(v&&v.soc!=null&&v.soc!=='')?Number(v.soc):null;
+      const socText=soc!=null&&isFinite(soc)?Math.round(soc)+' %':'—';
+      const socKind=soc==null?'neutral':(soc<20?'bad':soc<40?'warn':'ok');
+      const nearest=v&&v.nearest?v.nearest:{};
+      const freePorts=Number(nearest.freePorts||0), portCount=Number(nearest.portCount||0);
+      const stKind=freePorts>0?'ok':((nearest.status||'').toLowerCase().includes('in_use')?'warn':'neutral');
+      const connectorText=Array.isArray(v.connectorTypes)&&v.connectorTypes.length?v.connectorTypes.join(', '):'—';
+      html+='<div style="border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;background:rgba(255,255,255,.03);"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;"><div style="min-width:0;flex:1 1 auto;"><div style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(v.name||v.id||'Fahrzeug')+'</div><div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">'+badge('Ladezustand: '+esc(socText),socKind)+badge('Stecker: '+esc(connectorText),'neutral')+'</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'+badge('Verbunden: '+esc(boolTxt(v.connected)),boolKind(v.connected))+badge('Lädt: '+esc(boolTxt(v.charging)),boolKind(v.charging))+'</div></div><div style="margin-top:10px;"><div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc((nearest.city?nearest.city+' · ':'')+(nearest.station||'—'))+'</div><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">'+badge('Distanz: '+esc(fmtD(nearest.distanceM)),'neutral')+badge('Ports: '+esc(freePorts+'/'+portCount+' frei'),stKind)+badge(esc(nearest.status||'—'),stKind)+'</div></div></div>';
+    });
+    html+='</div></div></div>';
+    document.getElementById('cc-cpt-root').innerHTML=html;
+  }
+  render(); setInterval(render,5000);
 })();
 </script>

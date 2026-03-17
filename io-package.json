@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "carcharging",
-    "version": "0.1.0-alpha.13",
+    "version": "0.1.0-alpha.14",
     "title": "CarCharging",
     "titleLang": {
       "en": "CarCharging",
@@ -49,6 +49,9 @@
       },
       "0.1.0-alpha.13": {
         "en": "Removed legacy single vehicle configuration fields; vehicles table only."
+      },
+      "0.1.0-alpha.14": {
+        "en": "Per-vehicle connector types, cleaned object structure and nearest station filtering by connector type."
       }
     }
   },

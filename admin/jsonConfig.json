@@ -323,6 +323,19 @@
                 "en": "Charging state id"
               },
               "width": 220
+            },
+            {
+              "type": "text",
+              "attr": "connectorTypes",
+              "title": {
+                "de": "Steckertypen",
+                "en": "Connector types"
+              },
+              "width": 220,
+              "help": {
+                "de": "Kommagetrennt, z. B. type2,ccs. Unterstützt: type2, ccs, chademo, type1, schuko, cee_blue, cee_red, nacs, dc_fast",
+                "en": "Comma separated, e.g. type2,ccs. Supported: type2, ccs, chademo, type1, schuko, cee_blue, cee_red, nacs, dc_fast"
+              }
             }
           ],
           "help": {

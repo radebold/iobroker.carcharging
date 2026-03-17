@@ -48,6 +48,44 @@ function parseChargingState(v) {
     return null;
 }
 
+
+function parseConnectorTypes(v) {
+    if (v === null || v === undefined || v === '') return [];
+    if (Array.isArray(v)) return v.map(x => normalizeConnectorType(x)).filter(Boolean);
+    return String(v).split(',').map(x => normalizeConnectorType(x)).filter(Boolean);
+}
+
+function normalizeConnectorType(v) {
+    if (v === null || v === undefined) return '';
+    const s = String(v).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    if (!s) return '';
+    if (s.includes('type_2') || s == 'type2' || s == 'iec62196_t2') return 'type2';
+    if (s.includes('ccs') || s.includes('combo')) return 'ccs';
+    if (s.includes('chademo')) return 'chademo';
+    if (s.includes('type_1') || s == 'type1' || s.includes('j1772')) return 'type1';
+    if (s.includes('schuko') || s.includes('household')) return 'schuko';
+    if (s.includes('cee_blue')) return 'cee_blue';
+    if (s.includes('cee_red')) return 'cee_red';
+    if (s.includes('nacs') || s.includes('tesla')) return 'nacs';
+    if (s.includes('dc_fast') || s == 'dcfast' || s == 'dc') return 'dc_fast';
+    return s;
+}
+
+function connectorLabel(key) {
+    const map = {
+        type2: 'Type2',
+        ccs: 'CCS',
+        chademo: 'CHAdeMO',
+        type1: 'Type1',
+        schuko: 'Schuko',
+        cee_blue: 'CEE blau',
+        cee_red: 'CEE rot',
+        nacs: 'NACS',
+        dc_fast: 'DC Fast',
+    };
+    return map[key] || key;
+}
+
 class CptAdapter extends utils.Adapter {
     constructor(options) {
         super({ ...options, name: 'carcharging' });
@@ -620,6 +658,7 @@ class CptAdapter extends utils.Adapter {
             carSocStateId: String(v.carSocStateId || '').trim(),
             carConnectedStateId: String(v.carConnectedStateId || '').trim(),
             carChargingStateId: String(v.carChargingStateId || '').trim(),
+            connectorTypes: parseConnectorTypes(v.connectorTypes),
         })).filter(v => !!v.id && v.enabled !== false);
     }
 
@@ -660,8 +699,15 @@ class CptAdapter extends utils.Adapter {
             for (const [id, common] of nearestDefs) {
                 await this.setObjectNotExistsAsync(`${base}.nearest.${id}`, { type: 'state', common, native: {} });
             }
+            await this.setObjectNotExistsAsync(`${base}.config`, { type: 'channel', common: { name: 'Config' }, native: {} });
+            await this.setObjectNotExistsAsync(`${base}.config.connectorTypes`, {
+                type: 'state',
+                common: { name: 'Connector types', type: 'string', role: 'json', read: true, write: false },
+                native: {},
+            });
             await this.setStateAsync(`${base}.name`, { val: v.name || v.id, ack: true });
             await this.setStateAsync(`${base}.enabled`, { val: v.enabled !== false, ack: true });
+            await this.setStateAsync(`${base}.config.connectorTypes`, { val: JSON.stringify(v.connectorTypes || []), ack: true });
         }
     }
 
@@ -705,6 +751,15 @@ class CptAdapter extends utils.Adapter {
         }
     }
 
+
+    portMatchesVehicleConnectorTypes(displayPlugType, connectorTypes) {
+        const selected = Array.isArray(connectorTypes) ? connectorTypes : [];
+        if (!selected.length) return true;
+        const norm = normalizeConnectorType(displayPlugType);
+        if (!norm) return false;
+        return selected.includes(norm);
+    }
+
     async updateNearestForVehicle(vehicleId) {
         const v = this.vehiclesConfig.find(x => x.id === vehicleId);
         if (!v) return;
@@ -714,34 +769,64 @@ class CptAdapter extends utils.Adapter {
         const base = `vehicles.${vehicleId}.nearest`;
         const gpsStates = await this.getStatesAsync(this.namespace + '.stations.*.*.gps.json');
         let best = null;
+
         for (const [id, st] of Object.entries(gpsStates || {})) {
             let gps = null; try { gps = st && st.val ? JSON.parse(String(st.val)) : null; } catch {}
             if (!gps || !Number.isFinite(Number(gps.lat)) || !Number.isFinite(Number(gps.lon))) continue;
             const rel = id.replace(this.namespace + '.', '').replace(/\.gps\.json$/, '');
-            const freeState = await this.getStateAsync(`${rel}.freePorts`).catch(() => null);
-            const freePorts = freeState && freeState.val !== undefined && freeState.val !== null ? Number(freeState.val) : NaN;
-            if (!(Number.isFinite(freePorts) && freePorts > 0)) continue;
+
+            let matchingFreePorts = 0;
+            let matchingPortCount = 0;
+            const portCountState = await this.getStateAsync(`${rel}.portCount`).catch(() => null);
+            const maxPorts = portCountState && portCountState.val !== undefined && portCountState.val !== null ? Number(portCountState.val) : 0;
+            for (let p = 1; p <= Math.max(0, maxPorts); p++) {
+                const plugState = await this.getStateAsync(`${rel}.ports.${p}.displayPlugType`).catch(() => null);
+                const plugType = plugState && plugState.val ? String(plugState.val) : '';
+                if (!this.portMatchesVehicleConnectorTypes(plugType, v.connectorTypes)) continue;
+                matchingPortCount++;
+                const statusV2 = await this.getStateAsync(`${rel}.ports.${p}.statusV2`).catch(() => null);
+                const status = this.normalizeStatus(statusV2 && statusV2.val ? statusV2.val : '');
+                if (status === 'available') matchingFreePorts++;
+            }
+
+            if (!matchingPortCount) continue;
+            if (!(matchingFreePorts > 0)) continue;
+
             const distInfo = await this.getDistanceInfo(lat, lon, Number(gps.lat), Number(gps.lon));
             const m = Number(distInfo && distInfo.m); if (!Number.isFinite(m)) continue;
             const cityState = await this.getStateAsync(`${rel}.city`).catch(() => null);
             const nameState = await this.getStateAsync(`${rel}.name`).catch(() => null);
-            const portCountState = await this.getStateAsync(`${rel}.portCount`).catch(() => null);
             const statusState = await this.getStateAsync(`${rel}.statusDerived`).catch(() => null);
+
             const cand = {
                 rel,
                 station: nameState && nameState.val ? String(nameState.val) : rel.split('.').pop(),
                 city: cityState && cityState.val ? String(cityState.val) : '',
                 distanceM: m, distanceKm: Math.round((m/1000)*100)/100,
                 distanceType: String((distInfo && distInfo.source) || 'airline'),
-                freePorts,
-                portCount: portCountState && portCountState.val !== undefined && portCountState.val !== null ? Number(portCountState.val) : 0,
+                freePorts: matchingFreePorts,
+                portCount: matchingPortCount,
                 status: statusState && statusState.val ? String(statusState.val) : '',
                 lat: Number(gps.lat), lon: Number(gps.lon)
             };
             if (!best || cand.distanceM < best.distanceM) best = cand;
         }
-        if (!best) return;
         const now = new Date().toISOString();
+        if (!best) {
+            await this.setStateAsync(`${base}.station`, { val: '', ack: true });
+            await this.setStateAsync(`${base}.city`, { val: '', ack: true });
+            await this.setStateAsync(`${base}.distanceM`, { val: 0, ack: true });
+            await this.setStateAsync(`${base}.distanceKm`, { val: 0, ack: true });
+            await this.setStateAsync(`${base}.distanceType`, { val: '', ack: true });
+            await this.setStateAsync(`${base}.freePorts`, { val: 0, ack: true });
+            await this.setStateAsync(`${base}.portCount`, { val: 0, ack: true });
+            await this.setStateAsync(`${base}.status`, { val: '', ack: true });
+            await this.setStateAsync(`${base}.stationId`, { val: '', ack: true });
+            await this.setStateAsync(`${base}.lat`, { val: 0, ack: true });
+            await this.setStateAsync(`${base}.lon`, { val: 0, ack: true });
+            await this.setStateAsync(`${base}.lastUpdate`, { val: now, ack: true });
+            return;
+        }
         await this.setStateAsync(`${base}.station`, { val: best.station, ack: true });
         await this.setStateAsync(`${base}.city`, { val: best.city, ack: true });
         await this.setStateAsync(`${base}.distanceM`, { val: best.distanceM, ack: true });
@@ -772,6 +857,7 @@ class CptAdapter extends utils.Adapter {
             const status = await this.getStateAsync(`${base}.status`).catch(() => null);
             cards.push({
                 id: v.id, name: v.name || v.id,
+                connectorTypes: Array.isArray(v.connectorTypes) ? v.connectorTypes.map(connectorLabel) : [],
                 soc: Number.isFinite(live.soc) ? live.soc : null,
                 connected: live.connected ?? null,
                 charging: live.charging ?? null,
